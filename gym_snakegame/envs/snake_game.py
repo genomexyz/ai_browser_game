@@ -41,6 +41,7 @@ class SnakeGameEnv(gym.Env):
         assert n_target > 0
 
         self.time_limit_target = size**2 // 3
+        self.input_dim = 8
 
         self.size = size  # The size of the square grid
         self.window_width = 600  # The size of the PyGame window
@@ -51,6 +52,7 @@ class SnakeGameEnv(gym.Env):
         # space
         self.observation_space = spaces.Box(
             low=0, high=5, shape=(size, size), dtype=np.float32)
+        
         self.action_space = spaces.Discrete(4)
 
         self._action_to_direction = {
@@ -93,8 +95,50 @@ class SnakeGameEnv(gym.Env):
 
         self.counter_time_limit = 0
 
-        observation = self._get_obs()
+        #observation = self._get_obs()
         info = self._get_info()
+
+        #get new obs
+        target_loc_y, target_loc_x = np.where(self.board == TARGET)
+        target_loc_y = target_loc_y[0]
+        target_loc_x = target_loc_x[0]
+        observation = np.array(self.snake[-1])
+        #cek surrounding head
+        head_left_dist = self.snake[-1][1]
+        head_right_dist = self.size - self.snake[-1][1]
+        head_down_dist = self.snake[-1][0]
+        head_up_dist = self.size - self.snake[-1][0]
+        for iter_snake in range(len(self.snake)-1):
+            if self.snake[-1][0] == self.snake[iter_snake][0]:
+                dif_dist_left = self.snake[-1][1] - self.snake[iter_snake][1]
+                if dif_dist_left < head_left_dist and dif_dist_left >= 0:
+                    head_left_dist = dif_dist_left
+                dif_dist_right = self.snake[iter_snake][1] - self.snake[-1][1]
+                if dif_dist_right < head_right_dist and dif_dist_right >=0:
+                    head_right_dist = dif_dist_right
+            if self.snake[-1][1] == self.snake[iter_snake][1]:
+                dif_dist_down = self.snake[-1][0] - self.snake[iter_snake][0]
+                if dif_dist_down < head_down_dist and dif_dist_down >= 0:
+                    head_down_dist = dif_dist_down
+                dif_dist_up = self.snake[iter_snake][0] - self.snake[-1][0]
+                if dif_dist_up < head_up_dist and dif_dist_up >= 0:
+                    head_up_dist = dif_dist_up
+        #append surrounding head
+        observation = np.append(observation, head_left_dist)
+        observation = np.append(observation, head_right_dist)
+        observation = np.append(observation, head_down_dist)
+        observation = np.append(observation, head_up_dist)
+        #append target location
+        observation = np.append(observation, target_loc_y)
+        observation = np.append(observation, target_loc_x)
+
+        #normalize state with size
+        observation = observation / self.size
+        observation = observation.astype(np.float32)
+
+        #print(self.snake)
+        #print('cek obs', observation)
+        #exit()
 
         if self.render_mode == "human":
             self._render_frame()
@@ -188,8 +232,46 @@ class SnakeGameEnv(gym.Env):
             reward += -1
 
 
-        observation = self._get_obs()
+        #observation = self._get_obs()
         info = self._get_info()
+
+        #get new obs
+        target_loc_y, target_loc_x = np.where(self.board == TARGET)
+        target_loc_y = target_loc_y[0]
+        target_loc_x = target_loc_x[0]
+        observation = np.array(self.snake[-1])
+        #cek surrounding head
+        head_left_dist = self.snake[-1][1]
+        head_right_dist = self.size - self.snake[-1][1]
+        head_down_dist = self.snake[-1][0]
+        head_up_dist = self.size - self.snake[-1][0]
+        for iter_snake in range(len(self.snake)-1):
+            if self.snake[-1][0] == self.snake[iter_snake][0]:
+                dif_dist_left = self.snake[-1][1] - self.snake[iter_snake][1]
+                if dif_dist_left < head_left_dist and dif_dist_left >= 0:
+                    head_left_dist = dif_dist_left
+                dif_dist_right = self.snake[iter_snake][1] - self.snake[-1][1]
+                if dif_dist_right < head_right_dist and dif_dist_right >=0:
+                    head_right_dist = dif_dist_right
+            if self.snake[-1][1] == self.snake[iter_snake][1]:
+                dif_dist_down = self.snake[-1][0] - self.snake[iter_snake][0]
+                if dif_dist_down < head_down_dist and dif_dist_down >= 0:
+                    head_down_dist = dif_dist_down
+                dif_dist_up = self.snake[iter_snake][0] - self.snake[-1][0]
+                if dif_dist_up < head_up_dist and dif_dist_up >= 0:
+                    head_up_dist = dif_dist_up
+        #append surrounding head
+        observation = np.append(observation, head_left_dist)
+        observation = np.append(observation, head_right_dist)
+        observation = np.append(observation, head_down_dist)
+        observation = np.append(observation, head_up_dist)
+        #append target location
+        observation = np.append(observation, target_loc_y)
+        observation = np.append(observation, target_loc_x)
+
+        #normalize state with size
+        observation = observation / self.size
+        observation = observation.astype(np.float32)
 
         if self.render_mode == "human":
             self._render_frame()

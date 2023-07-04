@@ -58,9 +58,11 @@ def train():
     env = gym.make('gym_snakegame/SnakeGame-v0', size=25, n_target=1, render_mode='None')
 
     # state space dimension
-    state_dim = env.observation_space.shape[0]*env.observation_space.shape[1]
+    #state_dim = env.observation_space.shape[0]*env.observation_space.shape[1]
+    state_dim = env.input_dim
     #print('cek obs space', env.observation_space.shape)
     #exit()
+    print('cek state dim', state_dim)
 
     # action space dimension
     if has_continuous_action_space:
@@ -176,7 +178,8 @@ def train():
     while time_step <= max_training_timesteps:
 
         state, info = env.reset()
-        state = np.reshape(state, (-1))
+        #print('cek state', state)
+        #state = np.reshape(state, (-1))
         current_ep_reward = 0
 
         for t in range(1, max_ep_len+1):
@@ -184,11 +187,12 @@ def train():
             # select action with policy
             #state_np = np.array(state)
             #normalize state by divide it by 5, because the highest possible value in state is 5
-            state_norm = state / 5
+            #state_norm = state / 5
+            state_norm = state
             action = ppo_agent.select_action(state_norm)
             #state, reward, done, _ = env.step(action)
             state, reward, terminated, truncated, info = env.step(action)
-            state = np.reshape(state, (-1))
+            #state = np.reshape(state, (-1))
 
             done = 0
             if terminated or truncated:

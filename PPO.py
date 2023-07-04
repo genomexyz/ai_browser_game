@@ -34,11 +34,13 @@ class RolloutBuffer:
         del self.state_values[:]
         del self.is_terminals[:]
 
-#total_neuron = 64
-total_neuron = 256
+total_neuron = 64
+#total_neuron = 256
 class ActorCritic(nn.Module):
     def __init__(self, state_dim, action_dim, has_continuous_action_space, action_std_init):
         super(ActorCritic, self).__init__()
+
+        #print('cek state dim', state_dim)
 
         self.has_continuous_action_space = has_continuous_action_space
         

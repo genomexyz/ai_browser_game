@@ -51,6 +51,7 @@ class SnakeGameEnv(gym.Env):
         # space
         self.observation_space = spaces.Box(
             low=0, high=5, shape=(size, size), dtype=np.float32)
+        
         self.action_space = spaces.Discrete(4)
 
         self._action_to_direction = {
