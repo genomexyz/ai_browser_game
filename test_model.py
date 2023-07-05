@@ -4,7 +4,7 @@ import numpy as np
 
 from PPO import PPO
 
-checkpoint_path = 'snake_prototype.pth'
+checkpoint_path = 'PPO_preTrained/SnakeGame-v0/PPO_SnakeGame-v0_0_0.pth'
 
 #has_continuous_action_space = True  # continuous action space; else discrete
 has_continuous_action_space = False
@@ -41,7 +41,8 @@ env = gym.make('gym_snakegame/SnakeGame-v0', size=25, n_target=1, render_mode='h
 # env = gym.wrappers.RecordVideo(env, video_folder='./video_folder', episode_trigger=lambda x: x % 200 == 0)
 
 # state space dimension
-state_dim = env.observation_space.shape[0] * env.observation_space.shape[1]
+#state_dim = env.observation_space.shape[0] * env.observation_space.shape[1]
+state_dim = env.input_dim
 
 # action space dimension
 if has_continuous_action_space:
@@ -59,17 +60,11 @@ observation, info = env.reset()
 observation = np.reshape(observation, (-1))
 anchor_step = 0
 history_head = []
-for i in range(100000):
+for i in range(1000000):
     #action = env.action_space.sample()
     action = ppo_agent.select_action(observation)
     #print('cek obs action', np.shape(observation), action)
     observation, reward, terminated, _, info = env.step(action)
-    head = np.where(observation == 3)
-    head = [head[0][0], head[1][0]]
-    history_head.append(head)
-    print(head)
-    exit()
-    observation = np.reshape(observation, (-1))
     if terminated:
         print('total duration step', i - anchor_step)
         anchor_step = i
