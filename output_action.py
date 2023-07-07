@@ -1,10 +1,8 @@
-import torch
-import torchvision
 import gym_snakegame
 import gymnasium as gym
+import numpy as np
 
 from PPO import PPO
-from PPO import ActorCritic
 
 checkpoint_path = 'PPO_preTrained/SnakeGame-v0/PPO_SnakeGame-v0_0_0.pth'
 
@@ -40,8 +38,10 @@ random_seed = 0         # set random seed if required (0 = no random seed)
 #####################################################
 
 env = gym.make('gym_snakegame/SnakeGame-v0', size=25, n_target=1, render_mode='human')
+# env = gym.wrappers.RecordVideo(env, video_folder='./video_folder', episode_trigger=lambda x: x % 200 == 0)
 
 # state space dimension
+#state_dim = env.observation_space.shape[0] * env.observation_space.shape[1]
 state_dim = env.input_dim
 
 # action space dimension
@@ -51,20 +51,9 @@ else:
     action_dim = env.action_space.n
 
 # initialize a PPO agent
-agent_ppo = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std)
-agent_ppo.load(checkpoint_path)
+ppo_agent = PPO(state_dim, action_dim, lr_actor, lr_critic, gamma, K_epochs, eps_clip, has_continuous_action_space, action_std)
+ppo_agent.load(checkpoint_path)
 
-model = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std)
-model.load_state_dict(agent_ppo.policy.state_dict())
-
-print('cek modul', model.modules())
-
-#model.eval()
-dummy_input = torch.randn(1, 8)
-
-input_names = ["input"]
-output_names = ["action", "action_prob", "reward_estimate"]
-
-torch.onnx.export(model, dummy_input, "model_new.onnx",
-                   verbose=True, input_names=input_names,
-  output_names=output_names)
+observation = np.array([0.04, 0.6, 0.6, 0.4, 0.04, 0.96, 0.28, 0.2])
+action = ppo_agent.select_action(observation)
+print('cek action', action)

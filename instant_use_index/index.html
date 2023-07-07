@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <title>Snake Game</title>
+    <style>
+        #game-board {
+            width: 500px;
+            height: 500px;
+            background-color: #f1f1f1;
+            border: 1px solid #ccc;
+            margin: 0 auto;
+            position: relative;
+        }
+        .snake-block {
+            width: 20px;
+            height: 20px;
+            background-color: #333;
+            position: absolute;
+        }
+        #food {
+            width: 20px;
+            height: 20px;
+            background-color: #ff0000;
+            position: absolute;
+        }
+    </style>
+</head>
+    <body>
+        <div id="game-board"></div>
+        <!-- import ONNXRuntime Web from CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+        <script>
+            var session;
+            async function init_model() {
+                session = await ort.InferenceSession.create('./model_new.onnx');
+            }
+        </script>
+        <script>
+            // Game variables
+            var gameBoard = document.getElementById("game-board");
+            var snakeBlocks = [];
+            var coordinateBlocks = [];
+            var coordinateFood;
+            var food;
+            var direction = "right";
+            var interval;
+
+            // Initialize game
+            function init() {
+                createSnake();
+                createFood();
+                interval = setInterval(moveSnakeBot, 150);
+            }
+
+            // Create the snake
+            function createSnake() {
+                coordinateBlocks = []
+                snakeBlocks = []
+                for (var i = 0; i < 3; i++) {
+                    let snakeBlock = document.createElement("div");
+                    snakeBlock.classList.add("snake-block");
+                    snakeBlock.style.top = (13 * 20) + "px";
+                    snakeBlock.style.left = ((i+9) * 20) + "px";
+                    direction = "right";
+
+                    let coordinateBlock = [13 * 20, i * 20]
+                    gameBoard.appendChild(snakeBlock);
+                    snakeBlocks.push(snakeBlock);
+                    coordinateBlocks.push(coordinateBlock);
+                }
+            }
+
+            // Create the food
+            function createFood() {
+                var foodX = Math.floor(Math.random() * 20) * 20;
+                var foodY = Math.floor(Math.random() * 20) * 20;
+
+                food = document.createElement("div");
+                food.id = "food";
+                food.style.top = foodY + "px";
+                food.style.left = foodX + "px";
+                coordinateFood = [foodY, foodX]
+                gameBoard.appendChild(food);
+            }
+
+            function moveSnakeBot() {
+                processModel().then(() => {
+                    //console.log("Async function has finished executing");
+                    var head = snakeBlocks[snakeBlocks.length - 1];
+                    var top = parseInt(head.style.top);
+                    var left = parseInt(head.style.left);
+
+                    switch (direction) {
+                        case "up":
+                            top -= 20;
+                            break;
+                        case "down":
+                            top += 20;
+                            break;
+                        case "left":
+                            left -= 20;
+                            break;
+                        case "right":
+                            left += 20;
+                            break;
+                    }
+
+                    // Check for collision with walls
+                    if (top < 0 || left < 0 || top >= 500 || left >= 500) {
+                        gameOver();
+                        return;
+                    }
+
+                    // Check for collision with tail
+                    //console.log('cek tail', top, left, coordinateBlocks)
+                    for (var iter_tail = 0; iter_tail < coordinateBlocks.length - 1; iter_tail++) {
+                        let taily = coordinateBlocks[iter_tail][0]
+                        let tailx = coordinateBlocks[iter_tail][1]
+                        if (top == taily && left == tailx) {
+                            //console.log('bite tail')
+                            gameOver();
+                            return;
+                        }
+                    }
+
+                    var newHead = document.createElement("div");
+                    newHead.classList.add("snake-block");
+                    newHead.style.top = top + "px";
+                    newHead.style.left = left + "px";
+                    
+                    gameBoard.appendChild(newHead);
+                    snakeBlocks.push(newHead);
+                    coordinateBlocks.push([top, left])
+
+                    // Check collision with food
+                    if (top === parseInt(food.style.top) && left === parseInt(food.style.left)) {
+                        gameBoard.removeChild(food);
+                        createFood();
+                    } else {
+                        gameBoard.removeChild(snakeBlocks[0]);
+                        snakeBlocks.shift();
+                        coordinateBlocks.shift();
+                    }
+                    })
+                    .catch(error => {
+                    console.error("Error occurred:", error);
+                });
+                
+            }
+
+            // Game over
+            function gameOver() {
+                clearInterval(interval);
+                alert("Game over!");
+                gameBoard.innerHTML = "";
+                snakeBlocks = [];
+                init();
+            }
+
+            // Change direction
+            function changeDirectionBot(action) {
+                switch (action) {
+                    case 3:
+                        if (direction !== "right")
+                            direction = "left";
+                        break;
+                    case 2:
+                        if (direction !== "down")
+                            direction = "up";
+                        break;
+                    case 1:
+                        if (direction !== "left")
+                            direction = "right";
+                        break;
+                    case 0:
+                        if (direction !== "up")
+                            direction = "down";
+                        break;
+                }
+            }
+
+            async function processModel() {
+                //colect observation
+                let target_real_y = (coordinateFood[0] / 20)
+                let target_real_x = (coordinateFood[1] / 20)
+                //console.log('lokasi target', target_real_y, target_real_x, food)
+
+                let head_left_dist = (coordinateBlocks[coordinateBlocks.length - 1][1] / 20)
+                let head_right_dist = 25 - (coordinateBlocks[coordinateBlocks.length - 1][1] / 20)
+                let head_down_dist = (coordinateBlocks[coordinateBlocks.length - 1][0] / 20) //upside down in original model
+                let head_up_dist = 25 - (coordinateBlocks[coordinateBlocks.length - 1][0] / 20) //upside down in original model
+
+                for (var iter_tail = 0; iter_tail < coordinateBlocks.length - 1; iter_tail++) {
+                    if (coordinateBlocks[coordinateBlocks.length - 1][0] == coordinateBlocks[iter_tail][0]) {
+                        let dif_dist_left = (coordinateBlocks[coordinateBlocks.length - 1][1] - coordinateBlocks[iter_tail][1]) / 20
+                        if (dif_dist_left < head_left_dist && dif_dist_left >= 0) {
+                            head_left_dist = dif_dist_left
+                        }
+                        //console.log('debug y', head_left_dist, dif_dist_left)
+                        let dif_dist_right = (coordinateBlocks[iter_tail][1] - coordinateBlocks[coordinateBlocks.length - 1][1]) / 20
+                        if (dif_dist_right < head_right_dist && dif_dist_right >=0) {
+                            head_right_dist = dif_dist_right
+                        }
+                    }
+                    if (coordinateBlocks[coordinateBlocks.length - 1][1] == coordinateBlocks[iter_tail][1]) {
+                        let dif_dist_down = (coordinateBlocks[coordinateBlocks.length - 1][0] - coordinateBlocks[iter_tail][0]) / 20
+                        if (dif_dist_down < head_down_dist && dif_dist_down >= 0) {
+                            head_down_dist = dif_dist_down
+                        }
+                        let dif_dist_up = (coordinateBlocks[iter_tail][0] - coordinateBlocks[coordinateBlocks.length - 1][0]) / 20
+                        if (dif_dist_up < head_up_dist && dif_dist_up >= 0) {
+                            head_up_dist = dif_dist_up
+                        }
+                    }
+                }
+
+                let head_y = coordinateBlocks[coordinateBlocks.length - 1][0] / 20
+                let head_x = coordinateBlocks[coordinateBlocks.length - 1][1] / 20
+                console.log('observation', head_y, head_x, head_left_dist, head_right_dist, 
+                head_down_dist, head_up_dist, target_real_y, target_real_x)
+                
+                let observation = [head_y, head_x, head_left_dist, head_right_dist, 
+                head_down_dist, head_up_dist, target_real_y, target_real_x]
+
+                //normalize observation
+                for (var iter_obs = 0; iter_obs < observation.length; iter_obs++) {
+                    observation[iter_obs] = observation[iter_obs] / 25
+                }
+                console.log('obs', observation)
+
+                // prepare inputs. a tensor need its corresponding TypedArray as data
+                let dataObs = Float32Array.from(observation);
+                const tensorObs = new ort.Tensor('float32', dataObs, [1, 8]);
+
+                // prepare feeds. use model input names as keys.
+                const feeds = { 'input': tensorObs};
+
+                // feed inputs and run
+                const results = await session.run(feeds);
+
+                // read from results
+                const decision = parseInt(results.action.data);
+
+                //console.log('obs action', observation, decision)
+
+                changeDirectionBot(decision);
+                //console.log('cek coordinate block', 25 - (coordinateBlocks[coordinateBlocks.length - 1][1] / 20))
+            }
+
+            // Start the game
+            init_model();
+            init();
+        </script>
+
+        
+    </body>
+</html>

@@ -11,6 +11,7 @@ for i in range(100000):
     action = env.action_space.sample()
     #print('cek obs action', np.shape(observation), action)
     obs, reward, terminated, _, info = env.step(action)
+    print('cek obs', obs*25)
     if terminated:
         print('total duration step', i - anchor_step)
         anchor_step = i

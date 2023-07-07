@@ -79,7 +79,8 @@ class SnakeGameEnv(gym.Env):
         # initialize snake
         self.snake = deque()
         for i in range(3):
-            self.snake.appendleft(np.array([self.size//2, self.size//2-i]))
+            #self.snake.appendleft(np.array([self.size//2, self.size//2-i]))
+            self.snake.appendleft(np.array([0, self.size//2-i]))
 
         for x, y in self.snake:
             self.board[x, y] = SNAKE_BODY

@@ -18,7 +18,7 @@ def train():
     ####### initialize environment hyperparameters ######
     #env_name = "RoboschoolWalker2d-v1"
     env_name = 'gym_snakegame/SnakeGame-v0'
-    threshold_score = 100
+    threshold_score = 29
     
 
     #has_continuous_action_space = True  # continuous action space; else discrete
